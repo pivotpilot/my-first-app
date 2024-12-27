@@ -5,17 +5,16 @@ import { supabase } from "../utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
 
 export default function Home() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [user, setUser] = useState<User | null>(null);
-  const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [user, setUser] = useState<User | null>(() => null);
+  const [tasks, setTasks] = useState<{ id: number; title: string; completed: boolean }[]>([]);
+  const [newTask, setNewTask] = useState<string>("");
 
-  // Check for an existing session
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getSession();
-      setUser(data?.session?.user as User || null);
+      setUser(data?.session?.user ?? null); // Use nullish coalescing for clarity
 
       if (data?.session?.user) {
         fetchTasks();
@@ -25,35 +24,31 @@ export default function Home() {
     checkUser();
   }, []);
 
-  // Fetch tasks from Supabase
   const fetchTasks = async () => {
     const { data, error } = await supabase.from("tasks").select("*");
     if (error) {
       console.error("Error fetching tasks:", error);
     } else {
-      setTasks(data);
+      setTasks(data || []);
     }
   };
 
-  // Add a new task
   const addTask = async () => {
     if (!newTask) return;
-  
+
     const { data: newEntry, error } = await supabase
       .from("tasks")
       .insert([{ title: newTask, completed: false }])
-      .select("*"); // Ensures the inserted row is returned
-  
+      .select("*");
+
     if (error) {
       console.error("Error adding task:", error);
     } else {
-      // Ensure newEntry is added as an array
-      setTasks((prev) => [...prev, ...newEntry]);
-      setNewTask(""); // Clear the input
+      setTasks((prev) => [...prev, ...(newEntry || [])]);
+      setNewTask("");
     }
   };
 
-  // Handle login
   const handleLogin = async () => {
     const { error, data } = await supabase.auth.signInWithPassword({
       email,
@@ -65,29 +60,28 @@ export default function Home() {
       alert("Login failed! Check your email and password.");
     } else {
       setUser(data.user);
-      fetchTasks(); // Fetch tasks for the logged-in user
+      fetchTasks();
       alert("Login successful!");
     }
   };
 
-  // Handle logout
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Logout error:", error);
     } else {
       setUser(null);
-      setTasks([]); // Clear tasks when logged out
+      setTasks([]);
       alert("Logged out successfully!");
     }
   };
 
-  const markAsCompleted = async (id) => {
+  const markAsCompleted = async (id: number) => {
     const { error } = await supabase
       .from("tasks")
       .update({ completed: true })
       .eq("id", id);
-  
+
     if (error) {
       console.error("Error marking task as completed:", error);
     } else {
@@ -99,12 +93,12 @@ export default function Home() {
     }
   };
 
-  const deleteTask = async (id) => {
+  const deleteTask = async (id: number) => {
     const { error } = await supabase
       .from("tasks")
       .delete()
       .eq("id", id);
-  
+
     if (error) {
       console.error("Error deleting task:", error);
     } else {
@@ -135,9 +129,10 @@ export default function Home() {
               {tasks.map((task) => (
                 <li key={task.id}>
                   {task.title} - {task.completed ? "Completed" : "Not Completed"}
-                  {!task.completed && (<button onClick={() => markAsCompleted(task.id)}>Mark as Completed</button>
-    )}
-    <button onClick={() => deleteTask(task.id)}>Delete</button> 
+                  {!task.completed && (
+                    <button onClick={() => markAsCompleted(task.id)}>Mark as Completed</button>
+                  )}
+                  <button onClick={() => deleteTask(task.id)}>Delete</button>
                 </li>
               ))}
             </ul>
