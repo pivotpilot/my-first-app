@@ -5,16 +5,16 @@ import { supabase } from "../utils/supabaseClient";
 import { User } from "@supabase/supabase-js";
 
 export default function Home() {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [user, setUser] = useState<User | null>(() => null);
+  const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<{ id: number; title: string; completed: boolean }[]>([]);
   const [newTask, setNewTask] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
 
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getSession();
-      setUser(data?.session?.user ?? null); // Use nullish coalescing for clarity
+      setUser(data?.session?.user ?? null);
 
       if (data?.session?.user) {
         fetchTasks();
