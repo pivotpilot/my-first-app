@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../utils/supabaseClient";
+import { User } from "@supabase/supabase-js";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
 
@@ -14,7 +15,7 @@ export default function Home() {
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getSession();
-      setUser(data?.session?.user || null);
+      setUser(data?.session?.user as User || null);
 
       if (data?.session?.user) {
         fetchTasks();
